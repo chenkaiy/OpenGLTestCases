@@ -3,6 +3,7 @@ package com.example.myfirstapplication;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -23,7 +24,7 @@ public class SimpleTexture2DRender implements GLSurfaceView.Renderer
     {
 
         mVertices = ByteBuffer.allocateDirect ( mVerticesData.length * 4 )
-                .order ( ByteOrder.nativeOrder() ).asFloatBuffer();
+            .order ( ByteOrder.nativeOrder() ).asFloatBuffer();
         mVertices.put ( mVerticesData ).position ( 0 );
         mIndices = ByteBuffer.allocateDirect ( mIndicesData.length * 2 )
                 .order ( ByteOrder.nativeOrder() ).asShortBuffer();
@@ -74,7 +75,7 @@ public class SimpleTexture2DRender implements GLSurfaceView.Renderer
     public void onSurfaceCreated ( GL10 glUnused, EGLConfig config )
     {
         String vShaderStr =
-                "#version 300 es              				\n" +
+                "#version 310 es              				\n" +
                         "layout(location = 0) in vec4 a_position;   \n" +
                         "layout(location = 1) in vec2 a_texCoord;   \n" +
                         "out vec2 v_texCoord;     	  				\n" +
@@ -85,7 +86,7 @@ public class SimpleTexture2DRender implements GLSurfaceView.Renderer
                         "}                            				\n";
 
         String fShaderStr =
-                "#version 300 es                                     \n" +
+                "#version 310 es                                     \n" +
                         "precision mediump float;                            \n" +
                         "in vec2 v_texCoord;                            	 \n" +
                         "layout(location = 0) out vec4 outColor;             \n" +
@@ -98,6 +99,11 @@ public class SimpleTexture2DRender implements GLSurfaceView.Renderer
         // Load the shaders and get a linked program object
         mProgramObject = ESShader.loadProgram ( vShaderStr, fShaderStr );
 
+        IntBuffer numActiveAttribs = IntBuffer.allocate(1);
+
+        GLES31.glGetProgramiv(mProgramObject, GLES31.GL_ACTIVE_ATTRIBUTES, numActiveAttribs);
+
+        System.out.println("Number of Active attribute = "+ numActiveAttribs.get(0));
         // Get the sampler location
         mSamplerLoc = GLES31.glGetUniformLocation ( mProgramObject, "s_texture" );
 
