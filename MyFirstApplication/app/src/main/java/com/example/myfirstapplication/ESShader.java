@@ -3,8 +3,10 @@ package com.example.myfirstapplication;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.IntBuffer;
 
 import android.content.Context;
+import android.opengl.GLES20;
 import android.opengl.GLES31;
 import android.util.Log;
 
@@ -144,6 +146,37 @@ public class ESShader {
         GLES31.glDeleteShader(vertexShader);
         GLES31.glDeleteShader(fragmentShader);
 
+        return programObject;
+    }
+
+    public static int loadComputeShader(String computeShaderSrc)
+    {
+        int programObject = GLES31.glCreateProgram();
+        int mComputeShader = GLES31.glCreateShader(GLES31.GL_COMPUTE_SHADER);
+        GLES31.glShaderSource(mComputeShader, computeShaderSrc);
+        GLES31.glCompileShader(mComputeShader);
+
+        IntBuffer StatusBuffer = IntBuffer.allocate(1);
+        GLES31.glGetShaderiv(mComputeShader, GLES31.GL_COMPILE_STATUS, StatusBuffer);
+
+        if(StatusBuffer.get(0) != 0)
+        {
+            Log.e("ESShader", "Compute Shader Compile Error:");
+            Log.e("ESShader", GLES31.glGetShaderInfoLog(mComputeShader));
+
+            return -1;
+        }
+
+        GLES31.glAttachShader(programObject, mComputeShader);
+        GLES31.glLinkProgram(programObject);
+        GLES31.glGetProgramiv(programObject, GLES31.GL_LINK_STATUS, StatusBuffer);
+        if(StatusBuffer.get(0) != 0)
+        {
+            Log.e("ESShader", "Compute Shader Link Error:");
+            Log.e("ESShader", GLES31.glGetProgramInfoLog(programObject));
+
+            return -1;
+        }
         return programObject;
     }
 

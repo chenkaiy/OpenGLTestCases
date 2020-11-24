@@ -38,10 +38,13 @@ public class MainActivity extends AppCompatActivity {
             // context, and set an OpenGL ES 3.0-compatible renderer.
             mGLSurfaceView.setEGLContextClientVersion ( CONTEXT_CLIENT_VERSION );
             //mGLSurfaceView.setRenderer ( new VertexBufferObjectRender ( this ) );
-            mGLSurfaceView.setRenderer ( new SimpleTexture2DRender ( this ) );
+            //mGLSurfaceView.setRenderer ( new SimpleTexture2DRender ( this ) );
+            //mGLSurfaceView.setRenderer ( new ComputeShaderRender( this));
             //mGLSurfaceView.setRenderer ( new SimpleTexture3DRender ( this ) );
             //mGLSurfaceView.setRenderer ( new SimpleTextureCubemapRenderer ( this ) );
             //mGLSurfaceView.setRenderer( new MipMap2DRenderer(this));
+            //mGLSurfaceView.setRenderer( new HelloTriangleRenderer(this));
+            mGLSurfaceView.setRenderer ( new ComputeRender( this));
         }
         else
         {

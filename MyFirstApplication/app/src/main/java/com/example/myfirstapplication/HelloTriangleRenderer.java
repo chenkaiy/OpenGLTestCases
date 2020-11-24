@@ -106,7 +106,7 @@ public class HelloTriangleRenderer implements GLSurfaceView.Renderer
     public void onSurfaceCreated ( GL10 glUnused, EGLConfig config )
     {
         String vShaderStr =
-                "#version 300 es 			  \n"
+                "#version 310 es 			  \n"
                         +   "in vec4 vPosition;           \n"
                         + "void main()                  \n"
                         + "{                            \n"
@@ -114,7 +114,7 @@ public class HelloTriangleRenderer implements GLSurfaceView.Renderer
                         + "}                            \n";
 
         String fShaderStr =
-                "#version 300 es		 			          	\n"
+                "#version 310 es		 			          	\n"
                         + "precision mediump float;					  	\n"
                         + "out vec4 fragColor;	 			 		  	\n"
                         + "void main()                                  \n"
@@ -142,13 +142,17 @@ public class HelloTriangleRenderer implements GLSurfaceView.Renderer
         GLES31.glAttachShader ( programObject, vertexShader );
         GLES31.glAttachShader ( programObject, fragmentShader );
 
-        // Bind vPosition to attribute 0
-        GLES31.glBindAttribLocation ( programObject, 0, "vPosition" );
+
 
         // Link the program
         GLES31.glLinkProgram ( programObject );
 
+        // Bind vPosition to attribute 0
+        GLES31.glBindAttribLocation ( programObject, 0, "vPosition" );
         // Check the link status
+        int testLoc = -1;
+        testLoc = GLES31.glGetAttribLocation(programObject, "vPosition");
+
         GLES31.glGetProgramiv ( programObject, GLES31.GL_LINK_STATUS, linked, 0 );
 
         if ( linked[0] == 0 )
