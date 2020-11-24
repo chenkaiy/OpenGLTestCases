@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
             //mGLSurfaceView.setRenderer( new MipMap2DRenderer(this));
             //mGLSurfaceView.setRenderer( new HelloTriangleRenderer(this));
             mGLSurfaceView.setRenderer ( new ComputeRender( this));
+            //mGLSurfaceView.setRenderer ( new ComputeDataRender( this));
         }
         else
         {
