@@ -1,6 +1,7 @@
 package com.example.myfirstapplication;
 
 import android.content.Context;
+import android.graphics.PointF;
 import android.opengl.GLES31;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
@@ -14,6 +15,7 @@ import java.nio.ShortBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import static android.opengl.GLES20.glUniform1f;
 import static android.opengl.GLES31.glBindTexture;
 import static android.opengl.GLES31.glBindFramebuffer;
 import static android.opengl.GLES31.glFramebufferTexture2D;
@@ -58,15 +60,17 @@ public class ComputeRender implements GLSurfaceView.Renderer {
 
     private final float[] mVerticesData =
             {
-                    -0.5f, 0.5f, 0.0f, // Position 0
+                    -0.25f, 0.25f, 0.0f, // Position 0
                     0.0f, 0.0f, // TexCoord 0
-                    -0.5f, -0.5f, 0.0f, // Position 1
+                    -0.25f, -0.25f, 0.0f, // Position 1
                     0.0f, 1.0f, // TexCoord 1
-                    0.5f, -0.5f, 0.0f, // Position 2
+                    0.25f, -0.25f, 0.0f, // Position 2
                     1.0f, 1.0f, // TexCoord 2
-                    0.5f, 0.5f, 0.0f, // Position 3
+                    0.25f, 0.25f, 0.0f, // Position 3
                     1.0f, 0.0f // TexCoord 3
             };
+
+    private PointF[] posOffset;
 
     private final short[] mIndicesData =
             {
@@ -74,6 +78,8 @@ public class ComputeRender implements GLSurfaceView.Renderer {
             };
 
     private int[] fTexture = new int[3];
+
+    private int[] fTextureRGBA8 = new int[1];
 
     private int[] fFrame = new int[1];
 
@@ -93,6 +99,8 @@ public class ComputeRender implements GLSurfaceView.Renderer {
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         mViewWidth = width;
         mViewHeight = height;
+
+        setPosOffset();
     }
 
     @Override
@@ -105,20 +113,20 @@ public class ComputeRender implements GLSurfaceView.Renderer {
 
         long begin = System.currentTimeMillis();
 
-        performCompute(fTexture[0], fTexture[1]);
-        performCompute(fTexture[1], fTexture[2]);
+        performCompute(fTexture[0], fTexture[1], fTextureRGBA8[0]);
+        //performCompute(fTexture[1], fTexture[2]);
 
-        Log.w(TAG, "total compute spent:" + (System.currentTimeMillis() - begin));
-        glReadBuffer(GLES31.GL_COLOR_ATTACHMENT0);
-        glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_FLOAT, a0);
-        glReadBuffer(GLES31.GL_COLOR_ATTACHMENT1);
-        glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_FLOAT, a1);
-        glReadBuffer(GLES31.GL_COLOR_ATTACHMENT2);
-        glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_FLOAT, a2);
-        float[] o1 = a0.array();
-        float[] o2 = a1.array();
-        float[] o3 = a2.array();
-        destroyEnvi();
+        //Log.w(TAG, "total compute spent:" + (System.currentTimeMillis() - begin));
+        //glReadBuffer(GLES31.GL_COLOR_ATTACHMENT0);
+        //glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_FLOAT, a0);
+        //glReadBuffer(GLES31.GL_COLOR_ATTACHMENT1);
+        //glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_FLOAT, a1);
+        //glReadBuffer(GLES31.GL_COLOR_ATTACHMENT2);
+        //glReadPixels(0, 0, mWidth, mHeight, GLES31.GL_RGBA, GLES31.GL_FLOAT, a2);
+        //float[] o1 = a0.array();
+        //float[] o2 = a1.array();
+        //float[] o3 = a2.array();
+        //destroyEnvi();
         performRendering();
     }
 
@@ -154,6 +162,25 @@ public class ComputeRender implements GLSurfaceView.Renderer {
         return floatBuffer;
     }
 
+    private void setPosOffset()
+    {
+        int Width = 3;
+        int Height = 3;
+        posOffset = new PointF[Height * Width];
+        float Offset = 0.6f;
+        float GlobalOffsetX = 0.5f;
+        float GlobalOffsetY = 0.5f;
+        int counter = 0;
+        for(int i = 0; i < Width; i++)
+        {
+            for(int j = 0; j < Height; j++)
+            {
+                posOffset[counter] = new PointF( -GlobalOffsetX + i * Offset, -GlobalOffsetX + j * Offset);
+                counter++;
+            }
+        }
+    }
+
     private FloatBuffer createValueBuffer() {
         FloatBuffer floatBuffer = FloatBuffer.allocate(mValueSize);
         for (int i = 0; i < mValueSize; i++) {
@@ -178,6 +205,15 @@ public class ComputeRender implements GLSurfaceView.Renderer {
             GLES31.glBindTexture(GL_TEXTURE_2D, 0);
         }
 
+        glGenTextures(1, fTextureRGBA8, 0);
+        glBindTexture(GLES31.GL_TEXTURE_2D, fTextureRGBA8[0]);
+        glTexStorage2D(GLES31.GL_TEXTURE_2D, 1, GLES31.GL_RGBA8, mWidth, mHeight);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        GLES31.glBindTexture(GL_TEXTURE_2D, 0);
+
         glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0,
                 GLES31.GL_TEXTURE_2D, fTexture[0], 0);
         glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT1,
@@ -195,12 +231,13 @@ public class ComputeRender implements GLSurfaceView.Renderer {
                 GLES31.GL_TEXTURE_2D, 0, 0);
     }
 
-    private void performCompute(int inputTeture, int outputTexture) {
+    private void performCompute(int inputTeture, int outputTexture1, int outputTexture2) {
         glUseProgram(mComputeProg);
         glUniform1fv(GLES31.glGetUniformLocation(mComputeProg, "v"), mValueSize, mValueBuffer);
 
         glBindImageTexture(0, inputTeture, 0, false, 0, GLES31.GL_READ_ONLY, GLES31.GL_RGBA32F);
-        glBindImageTexture(1, outputTexture, 0, false, 0, GLES31.GL_WRITE_ONLY, GLES31.GL_RGBA32F);
+        glBindImageTexture(1, outputTexture1, 0, false, 0, GLES31.GL_WRITE_ONLY, GLES31.GL_RGBA32F);
+        glBindImageTexture(2, outputTexture2, 0, false, 0, GLES31.GL_WRITE_ONLY, GLES31.GL_RGBA8);
 
         glDispatchCompute(1, 1, 1);
         glMemoryBarrier(GLES31.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -210,7 +247,7 @@ public class ComputeRender implements GLSurfaceView.Renderer {
     {
         GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
 
-        GLES31.glMemoryBarrier(GLES31.GL_ALL_BARRIER_BITS);
+        // GLES31.glMemoryBarrier(GLES31.GL_ALL_BARRIER_BITS);
         // Set the viewport
         GLES31.glViewport ( 0, 0, mViewWidth, mViewHeight );
         // Clear the color buffer
@@ -218,6 +255,8 @@ public class ComputeRender implements GLSurfaceView.Renderer {
         // Use the program object
 
         GLES31.glUseProgram ( mVSPSProg );
+
+
         // Load the vertex position
         mVertices.position ( 0 );
         GLES31.glVertexAttribPointer ( 0, 3, GLES31.GL_FLOAT,
@@ -236,8 +275,17 @@ public class ComputeRender implements GLSurfaceView.Renderer {
         GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
         GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTexture[1]);
 
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[0].x);
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[0].y);
+
         GLES31.glUniform1f(mSamplerLoc, 0);
 
+        GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
+
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[1].x);
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[1].y);
+        GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
+        GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTextureRGBA8[0]);
         GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
     }
 

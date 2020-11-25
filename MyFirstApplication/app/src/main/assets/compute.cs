@@ -5,6 +5,8 @@ uniform float v[1000];
 layout(binding = 0, rgba32f) readonly uniform mediump image2D input_image;
 layout(binding = 1, rgba32f) writeonly uniform mediump image2D output_image;
 
+layout(binding = 2, rgba8) writeonly uniform mediump image2D output_image8;
+
 shared vec4 scanline[32][32];
 
 void main(void)
@@ -19,4 +21,10 @@ void main(void)
     data.b = data.b;
     data.a = data.a;
     imageStore(output_image, pos.xy, data);
+
+    data.r = data.r + 0.1;
+    data.g = data.g + 0.3;
+    data.b = data.b + 0.2;
+    data.a = data.a;
+    imageStore(output_image8, pos.xy, data);
 }
