@@ -73,7 +73,7 @@ public class ComputeRender implements GLSurfaceView.Renderer {
                     0, 1, 2, 0, 2, 3
             };
 
-    private int[] fTexture = new int[3];
+    private int[] fTexture = new int[4];
 
     private int[] fFrame = new int[1];
 
@@ -107,6 +107,7 @@ public class ComputeRender implements GLSurfaceView.Renderer {
 
         performCompute(fTexture[0], fTexture[1]);
         performCompute(fTexture[1], fTexture[2]);
+        performCompute(fTexture[2], fTexture[3]);
 
         Log.w(TAG, "total compute spent:" + (System.currentTimeMillis() - begin));
         glReadBuffer(GLES31.GL_COLOR_ATTACHMENT0);
@@ -118,7 +119,7 @@ public class ComputeRender implements GLSurfaceView.Renderer {
         float[] o1 = a0.array();
         float[] o2 = a1.array();
         float[] o3 = a2.array();
-
+        destroyEnvi();
         performRendering();
     }
 
@@ -164,12 +165,11 @@ public class ComputeRender implements GLSurfaceView.Renderer {
     }
 
     public void createEnvi() {
-        /*
         glGenFramebuffers(1, fFrame, 0);
         glBindFramebuffer(GLES31.GL_FRAMEBUFFER, fFrame[0]);
-         */
-        glGenTextures(3, fTexture, 0);
-        for (int i = 0; i < 3; i++) {
+
+        glGenTextures(4, fTexture, 0);
+        for (int i = 0; i < 4; i++) {
             glBindTexture(GLES31.GL_TEXTURE_2D, fTexture[i]);
             glTexStorage2D(GLES31.GL_TEXTURE_2D, 1, GLES31.GL_RGBA32F, mWidth, mHeight);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -178,15 +178,26 @@ public class ComputeRender implements GLSurfaceView.Renderer {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             GLES31.glBindTexture(GL_TEXTURE_2D, 0);
         }
-/*
+
         glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0,
                 GLES31.GL_TEXTURE_2D, fTexture[0], 0);
         glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT1,
                 GLES31.GL_TEXTURE_2D, fTexture[1], 0);
         glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT2,
                 GLES31.GL_TEXTURE_2D, fTexture[2], 0);
+        glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT3,
+                GLES31.GL_TEXTURE_2D, fTexture[3], 0);
+    }
 
- */
+    public void destroyEnvi(){
+        glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0,
+                GLES31.GL_TEXTURE_2D, 0, 0);
+        glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT1,
+                GLES31.GL_TEXTURE_2D, 0, 0);
+        glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT2,
+                GLES31.GL_TEXTURE_2D, 0, 0);
+        glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT3,
+                GLES31.GL_TEXTURE_2D, 0, 0);
     }
 
     private void performCompute(int inputTeture, int outputTexture) {
@@ -202,12 +213,7 @@ public class ComputeRender implements GLSurfaceView.Renderer {
 
     private void performRendering()
     {
-        glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0,
-                GLES31.GL_TEXTURE_2D, 0, 0);
-        glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT1,
-                GLES31.GL_TEXTURE_2D, 0, 0);
-        glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT2,
-                GLES31.GL_TEXTURE_2D, 0, 0);
+        GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0);
 
         GLES31.glMemoryBarrier(GLES31.GL_ALL_BARRIER_BITS);
         // Set the viewport
