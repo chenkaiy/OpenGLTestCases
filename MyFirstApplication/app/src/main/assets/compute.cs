@@ -2,8 +2,8 @@
 layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 uniform float v[1000];
-layout(binding = 0, rgba32f) readonly uniform highp image2D input_image;
-layout(binding = 1, rgba32f) writeonly uniform highp image2D output_image;
+layout(binding = 0, rgba32f) readonly uniform mediump image2D input_image;
+layout(binding = 1, rgba32f) writeonly uniform mediump image2D output_image;
 
 shared vec4 scanline[32][32];
 
