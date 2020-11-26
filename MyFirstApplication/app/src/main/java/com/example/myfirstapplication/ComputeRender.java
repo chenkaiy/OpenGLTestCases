@@ -2,6 +2,7 @@ package com.example.myfirstapplication;
 
 import android.content.Context;
 import android.graphics.PointF;
+import android.graphics.Shader;
 import android.opengl.GLES31;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
@@ -57,6 +58,7 @@ public class ComputeRender implements GLSurfaceView.Renderer {
 
     // Sampler location
     private int mSamplerLoc;
+    private int[] mMaxThreadsInGroup = new int[2];
 
     private final float[] mVerticesData =
             {
@@ -77,13 +79,17 @@ public class ComputeRender implements GLSurfaceView.Renderer {
                     0, 1, 2, 0, 2, 3
             };
 
-    private int[] fTexture = new int[3];
+    private final int RGBA32F_Num = 3;
+    private int[] fTexture = new int[RGBA32F_Num];
 
-    private int[] fTextureRGBA8 = new int[1];
+    private final int RGBA8_Num = 2;
+    private int[] fTextureRGBA8 = new int[RGBA8_Num];
 
     private int[] fFrame = new int[1];
 
     private int mComputeProg;
+    private int mComputeProgRGBA8;
+    private int mComputeProg8_8;
     private int mVSPSProg;
 
 
@@ -114,7 +120,7 @@ public class ComputeRender implements GLSurfaceView.Renderer {
         long begin = System.currentTimeMillis();
 
         performCompute(fTexture[0], fTexture[1], fTextureRGBA8[0]);
-        //performCompute(fTexture[1], fTexture[2]);
+        performComputeRGBA8(fTextureRGBA8[0], fTextureRGBA8[1]);
 
         //Log.w(TAG, "total compute spent:" + (System.currentTimeMillis() - begin));
         //glReadBuffer(GLES31.GL_COLOR_ATTACHMENT0);
@@ -149,8 +155,20 @@ public class ComputeRender implements GLSurfaceView.Renderer {
         ShaderUtils.vglAttachShaderSource(mComputeProg, GLES31.GL_COMPUTE_SHADER, source);
         glLinkProgram(mComputeProg);
 
+        mComputeProgRGBA8 = GLES31.glCreateProgram();
+        String ComputeRGBASrc = ShaderUtils.loadFromAssetsFile("computeRGBA8.cs", mContext.getResources());
+        ShaderUtils.vglAttachShaderSource(mComputeProgRGBA8, GLES31.GL_COMPUTE_SHADER, ComputeRGBASrc);
+        glLinkProgram(mComputeProgRGBA8);
+
+        mComputeProg8_8 = GLES31.glCreateProgram();
+        String Compute8_8Src = ShaderUtils.loadFromAssetsFile("compute8x8.cs", mContext.getResources());
+        ShaderUtils.vglAttachShaderSource(mComputeProgRGBA8, GLES31.GL_COMPUTE_SHADER, ComputeRGBASrc);
+        glLinkProgram(mComputeProg8_8);
+
         mVSPSProg = ESShader.loadProgramFromAsset(mContext,"computeRenderVS.vert", "computeRenderPS.frag");
         mSamplerLoc = GLES31.glGetUniformLocation (mVSPSProg, "s_texture" );
+        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, mMaxThreadsInGroup, 0);
+        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, mMaxThreadsInGroup, 1);
     }
 
     private FloatBuffer createInputBuffer() {
@@ -191,11 +209,12 @@ public class ComputeRender implements GLSurfaceView.Renderer {
     }
 
     public void createEnvi() {
+        /*
         glGenFramebuffers(1, fFrame, 0);
         glBindFramebuffer(GLES31.GL_FRAMEBUFFER, fFrame[0]);
-
-        glGenTextures(3, fTexture, 0);
-        for (int i = 0; i < 3; i++) {
+        */
+        glGenTextures(RGBA32F_Num, fTexture, 0);
+        for (int i = 0; i < RGBA32F_Num; i++) {
             glBindTexture(GLES31.GL_TEXTURE_2D, fTexture[i]);
             glTexStorage2D(GLES31.GL_TEXTURE_2D, 1, GLES31.GL_RGBA32F, mWidth, mHeight);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -205,21 +224,24 @@ public class ComputeRender implements GLSurfaceView.Renderer {
             GLES31.glBindTexture(GL_TEXTURE_2D, 0);
         }
 
-        glGenTextures(1, fTextureRGBA8, 0);
-        glBindTexture(GLES31.GL_TEXTURE_2D, fTextureRGBA8[0]);
-        glTexStorage2D(GLES31.GL_TEXTURE_2D, 1, GLES31.GL_RGBA8, mWidth, mHeight);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        GLES31.glBindTexture(GL_TEXTURE_2D, 0);
-
+        glGenTextures(RGBA8_Num, fTextureRGBA8, 0);
+        for (int i = 0; i < RGBA8_Num; i++) {
+            glBindTexture(GLES31.GL_TEXTURE_2D, fTextureRGBA8[i]);
+            glTexStorage2D(GLES31.GL_TEXTURE_2D, 1, GLES31.GL_RGBA8, mWidth, mHeight);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            GLES31.glBindTexture(GL_TEXTURE_2D, 0);
+        }
+        /*
         glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0,
                 GLES31.GL_TEXTURE_2D, fTexture[0], 0);
         glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT1,
                 GLES31.GL_TEXTURE_2D, fTexture[1], 0);
         glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT2,
                 GLES31.GL_TEXTURE_2D, fTexture[2], 0);
+         */
     }
 
     public void destroyEnvi(){
@@ -231,16 +253,32 @@ public class ComputeRender implements GLSurfaceView.Renderer {
                 GLES31.GL_TEXTURE_2D, 0, 0);
     }
 
-    private void performCompute(int inputTeture, int outputTexture1, int outputTexture2) {
+    private void performCompute(int inputTexture, int outputTexture1, int outputTextureRGBA8) {
         glUseProgram(mComputeProg);
         glUniform1fv(GLES31.glGetUniformLocation(mComputeProg, "v"), mValueSize, mValueBuffer);
 
-        glBindImageTexture(0, inputTeture, 0, false, 0, GLES31.GL_READ_ONLY, GLES31.GL_RGBA32F);
+        glBindImageTexture(0, inputTexture, 0, false, 0, GLES31.GL_READ_ONLY, GLES31.GL_RGBA32F);
         glBindImageTexture(1, outputTexture1, 0, false, 0, GLES31.GL_WRITE_ONLY, GLES31.GL_RGBA32F);
-        glBindImageTexture(2, outputTexture2, 0, false, 0, GLES31.GL_WRITE_ONLY, GLES31.GL_RGBA8);
+        glBindImageTexture(2, outputTextureRGBA8, 0, false, 0, GLES31.GL_WRITE_ONLY, GLES31.GL_RGBA8);
 
-        glDispatchCompute(1, 1, 1);
+        glDispatchCompute(4, 4, 1);
         glMemoryBarrier(GLES31.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    }
+
+    private void performComputeRGBA8(int inputTexture, int outputTexture)
+    {
+        glUseProgram(mComputeProgRGBA8);
+
+        glBindImageTexture(0, inputTexture, 0, false, 0, GLES31.GL_READ_ONLY, GLES31.GL_RGBA8);
+        glBindImageTexture(1, outputTexture, 0, false, 0, GLES31.GL_WRITE_ONLY, GLES31.GL_RGBA8);
+
+        glDispatchCompute(4, 4, 1);
+        glMemoryBarrier(GLES31.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    }
+
+    private void performCompute8_8(int inputTexture, int outputTexture)
+    {
+
     }
 
     private void performRendering()
@@ -277,15 +315,20 @@ public class ComputeRender implements GLSurfaceView.Renderer {
 
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[0].x);
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[0].y);
-
         GLES31.glUniform1f(mSamplerLoc, 0);
-
         GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
 
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[1].x);
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[1].y);
         GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
         GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTextureRGBA8[0]);
+        GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
+
+
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[2].x);
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[2].y);
+        GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
+        GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTextureRGBA8[1]);
         GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
     }
 
