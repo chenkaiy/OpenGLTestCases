@@ -7,7 +7,7 @@ layout(binding = 1, rgba32f) writeonly uniform highp image2D output_image;
 
 layout(binding = 2, rgba8) writeonly uniform highp image2D output_image8;
 
-shared vec4 scanline[32][32];
+shared vec4 scanline[8][8];
 
 void main(void)
 {
@@ -16,15 +16,16 @@ void main(void)
     barrier();
     vec4 data = scanline[pos.x][pos.y];
     //data.r = data.r + v[999] ;
-    data.r = data.r;
-    data.g = data.g;
-    data.b = data.b;
-    data.a = data.a;
+    //data.r = data.r;
+    //data.g = data.g;
+    //data.b = data.b;
+    //data.a = data.a;
     imageStore(output_image, pos.xy, data);
 
     data.r = data.r + 0.1;
     data.g = data.g + 0.3;
     data.b = data.b + 0.2;
     data.a = data.a;
+    barrier();
     imageStore(output_image8, pos.xy, data);
 }

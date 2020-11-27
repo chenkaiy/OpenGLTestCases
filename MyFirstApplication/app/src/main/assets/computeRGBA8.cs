@@ -4,7 +4,7 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(binding = 0, rgba8) readonly uniform highp image2D input_image;
 layout(binding = 1, rgba8) writeonly uniform highp image2D output_image8;
 
-shared vec4 scanline[32][32];
+shared vec4 scanline[8][8];
 
 void main(void)
 {

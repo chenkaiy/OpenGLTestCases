@@ -58,7 +58,7 @@ public class ComputeRender implements GLSurfaceView.Renderer {
 
     // Sampler location
     private int mSamplerLoc;
-    private int[] mMaxThreadsInGroup = new int[2];
+    private int[] mParameters = new int[10];
 
     private final float[] mVerticesData =
             {
@@ -167,8 +167,12 @@ public class ComputeRender implements GLSurfaceView.Renderer {
 
         mVSPSProg = ESShader.loadProgramFromAsset(mContext,"computeRenderVS.vert", "computeRenderPS.frag");
         mSamplerLoc = GLES31.glGetUniformLocation (mVSPSProg, "s_texture" );
-        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, mMaxThreadsInGroup, 0);
-        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, mMaxThreadsInGroup, 1);
+        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, mParameters, 0);
+        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, mParameters, 1);
+        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_SHARED_MEMORY_SIZE, mParameters, 2);
+        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_WORK_GROUP_COUNT, mParameters, 3);
+        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_WORK_GROUP_SIZE, mParameters, 4);
+        GLES31.glGetIntegerv(GLES31.GL_MAX_COMPUTE_IMAGE_UNIFORMS, mParameters, 5);
     }
 
     private FloatBuffer createInputBuffer() {
@@ -311,24 +315,29 @@ public class ComputeRender implements GLSurfaceView.Renderer {
         GLES31.glEnableVertexAttribArray ( 1 );
 
         GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
-        GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTexture[1]);
-
+        GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTexture[0]);
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[0].x);
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[0].y);
         GLES31.glUniform1f(mSamplerLoc, 0);
         GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
 
+        GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
+        GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTexture[1]);
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[1].x);
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[1].y);
-        GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
-        GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTextureRGBA8[0]);
+        GLES31.glUniform1f(mSamplerLoc, 0);
         GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
 
-
+        GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
+        GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTextureRGBA8[0]);
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[2].x);
         GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[2].y);
+        GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
+
         GLES31.glActiveTexture ( GLES31.GL_TEXTURE0 );
         GLES31.glBindTexture ( GLES31.GL_TEXTURE_2D, fTextureRGBA8[1]);
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetX"), posOffset[3].x);
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(mVSPSProg, "OffsetY"), posOffset[3].y);
         GLES31.glDrawElements ( GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_SHORT, mIndices );
     }
 
